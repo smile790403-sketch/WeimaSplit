@@ -1,6 +1,6 @@
 // ==== API 連線設定 ====
 const API_BASE = 'https://script.google.com/macros/s/AKfycbz7fLPkIzRNWmB24KU-Ui7TJJvmbvbHLAfazIRyrNLNbm49Sy17_K3YPkH4HPW4oGNEzQ/exec';
-const APP_KEY = 'your-lightweight-app-key';
+const APP_KEY = 'halfweimasplit2026';
 
 function apiGet(params){
   const u = new URL(API_BASE);

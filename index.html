@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <title>旅行分帳 | Trip Splitter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#2f4833" />
+
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <span class="logo">🌿</span>
+      <h1>旅行分帳</h1>
+    </div>
+    <div class="trip-selector">
+      <label>目前旅程：</label>
+      <select id="currentTrip"></select>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="trips" class="active">旅程</button>
+    <button data-tab="fx">換匯</button>
+    <button data-tab="expenses">記帳</button>
+    <button data-tab="analytics">圖表分析</button>
+  </nav>
+
+  <main>
+    <!-- 旅程 -->
+    <section id="tab-trips" class="tab active">
+      <div class="card">
+        <h3>新增旅程</h3>
+        <div class="grid">
+          <div>
+            <label>旅程名稱</label>
+            <input id="trip-name" placeholder="例如：2026 日本賞櫻" />
+          </div>
+          <div>
+            <label>Base Currency</label>
+            <input id="trip-base" placeholder="TWD" value="TWD" />
+          </div>
+          <div>
+            <label>開始日期</label>
+            <input id="trip-start" type="date" />
+          </div>
+          <div>
+            <label>結束日期</label>
+            <input id="trip-end" type="date" />
+          </div>
+        </div>
+        <div class="grid">
+          <div>
+            <label>參與者（以逗號分隔）</label>
+            <input id="trip-members" placeholder="例如：Eva, 維, 馬" />
+          </div>
+        </div>
+        <button class="primary full" id="btn-add-trip">新增旅程</button>
+      </div>
+
+      <div class="card">
+        <h3>旅程列表</h3>
+        <table class="table" id="trip-table">
+          <thead><tr><th>名稱</th><th>日期</th><th>Base</th><th>成員</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 換匯 -->
+    <section id="tab-fx" class="tab">
+      <div class="card">
+        <h3>新增換匯紀錄</h3>
+        <div class="grid">
+          <div>
+            <label>換匯日期</label>
+            <input id="fx-date" type="date" />
+          </div>
+          <div>
+            <label>換匯所</label>
+            <input id="fx-vendor" placeholder="銀行/換匯所" />
+          </div>
+          <div>
+            <label>幣別</label>
+            <input id="fx-currency" placeholder="JPY, USD..." />
+          </div>
+          <div>
+            <label>外幣匯率（1 外幣 = ? Base）</label>
+            <input id="fx-rate" type="number" step="0.0001" placeholder="例：1 JPY = 0.22 TWD → 0.22" />
+          </div>
+          <div>
+            <label>換外幣金額</label>
+            <input id="fx-amt" type="number" step="0.01" placeholder="例如：50000" />
+          </div>
+          <div>
+            <label>From</label>
+            <input id="fx-from" placeholder="ATM/現金/卡片..." />
+          </div>
+        </div>
+        <div>
+          <label>備註</label>
+          <input id="fx-note" placeholder="可空白" />
+        </div>
+        <button class="primary full" id="btn-add-fx">新增換匯</button>
+      </div>
+
+      <div class="card">
+        <h3>換匯列表</h3>
+        <table class="table" id="fx-table">
+          <thead>
+            <tr><th>日期</th><th>幣別</th><th>匯率</th><th>外幣金額</th><th>Base 花費</th><th>換匯所</th><th>From</th><th>備註</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 記帳 -->
+    <section id="tab-expenses" class="tab">
+      <div class="card">
+        <h3>新增支出</h3>
+        <div class="grid">
+          <div>
+            <label>日期</label>
+            <input id="exp-date" type="date" />
+          </div>
+          <div>
+            <label>項目</label>
+            <select id="exp-category">
+              <option>機票</option><option>電信</option><option>交通</option><option>住宿</option>
+              <option>飲食(餐)</option><option>零食點心飲料</option><option>玩樂</option><option>明信片</option>
+              <option>郵票</option><option>紀念品(禮用品)</option><option>紀念品(食品類)</option>
+              <option>其他</option><option>團費</option><option>保險</option><option>治裝</option>
+            </select>
+          </div>
+          <div>
+            <label>金額</label>
+            <input id="exp-amount" type="number" step="0.01" />
+          </div>
+          <div>
+            <label>幣別</label>
+            <select id="exp-currency"></select>
+          </div>
+          <div>
+            <label>付款方式</label>
+            <select id="exp-paymethod">
+              <option>現金</option><option>維信用卡</option><option>馬信用卡</option><option>電子支付</option><option>轉帳</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div>
+            <label>付款者（可多選）</label>
+            <select id="exp-payers" multiple size="4"></select>
+            <div class="helper">※ 選擇後，下方會出現「付款者分配」表格</div>
+          </div>
+          <div>
+            <label>費用參與者（可多選）</label>
+            <div class="chip-actions">
+              <button type="button" class="ghost small" id="btn-part-all">全選</button>
+              <button type="button" class="ghost small" id="btn-part-none">全不選</button>
+            </div>
+            <select id="exp-participants" multiple size="6"></select>
+          </div>
+        </div>
+
+        <!-- ✅ 動態小表格：付款者分配（不用打逗號） -->
+        <div class="card soft" id="payers-alloc-card" style="display:none;">
+          <div class="row space-between">
+            <h4>付款者分配</h4>
+            <div class="segmented">
+              <button type="button" class="seg active" data-mode="equal">均分</button>
+              <button type="button" class="seg" data-mode="custom">自訂</button>
+            </div>
+          </div>
+          <div class="helper">若使用「自訂」，可以輸入每位付款者的金額或權重（系統會自動按比例歸一）。</div>
+          <div id="payer-alloc-table"></div>
+          <div class="row right" id="base-amount-preview" style="margin-top:6px;color:#2f4833;"></div>
+        </div>
+
+        <div class="grid">
+          <div>
+            <label>費用分攤方式</label>
+            <select id="exp-splitmethod">
+              <option value="equal" selected>平分</option>
+              <option value="amount">分攤金額</option>
+              <option value="percent">比例</option>
+            </select>
+          </div>
+          <div>
+            <label>分攤值（依方式：金額或百分比；順序與參與者一致）</label>
+            <input id="exp-splitvalues" placeholder="平分可留空；金額例：200,300；比例例：50,50" />
+            <div class="helper">* 你偏好平分，我已設為預設值。</div>
+          </div>
+        </div>
+
+        <div>
+          <label>備註</label>
+          <input id="exp-note" placeholder="可空白" />
+        </div>
+
+        <button class="primary full" id="btn-add-expense">新增支出</button>
+      </div>
+
+      <div class="card">
+        <h3>支出清單（可篩選）</h3>
+        <div class="grid">
+          <div>
+            <label>日期（起）</label>
+            <input id="flt-start" type="date" />
+          </div>
+          <div>
+            <label>日期（迄）</label>
+            <input id="flt-end" type="date" />
+          </div>
+          <div>
+            <label>項目類別</label>
+            <select id="flt-cat">
+              <option value="">全部</option>
+              <option>機票</option><option>電信</option><option>交通</option><option>住宿</option>
+              <option>飲食(餐)</option><option>零食點心飲料</option><option>玩樂</option><option>明信片</option>
+              <option>郵票</option><option>紀念品(禮用品)</option><option>紀念品(食品類)</option>
+              <option>其他</option><option>團費</option><option>保險</option><option>治裝</option>
+            </select>
+          </div>
+          <div>
+            <label>付款方式</label>
+            <select id="flt-paymethod">
+              <option value="">全部</option>
+              <option>現金</option><option>維信用卡</option><option>馬信用卡</option><option>電子支付</option><option>轉帳</option>
+            </select>
+          </div>
+        </div>
+
+        <table class="table" id="exp-table">
+          <thead>
+            <tr><th>日期</th><th>類別</th><th>金額</th><th>幣別</th><th>Base金額</th><th>付款者</th><th>參與者</th><th>分攤方式</th><th>備註</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 圖表分析 -->
+    <section id="tab-analytics" class="tab">
+      <div class="card">
+        <h3>依項目類別支出（圓餅圖）</h3>
+        <canvas id="chart-pie" height="200"></canvas>
+      </div>
+      <div class="card">
+        <h3>每位成員每日花費（群組長條）</h3>
+        <canvas id="chart-grouped" height="220"></canvas>
+      </div>
+      <div class="card">
+        <h3>每日共同花費（折線圖）</h3>
+        <canvas id="chart-line" height="200"></canvas>
+      </div>
+      <div class="card">
+        <h3>分帳列表（誰付給誰）</h3>
+        <table class="table" id="settle-table">
+          <thead><tr><th>付款人</th><th>收款人</th><th>金額</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <small>© 2026 Trip Splitter</small>
+  </footer>
+
+  <script src="api.js"></script>
+  <script src="charts.js"></script>
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+</body>
+</html>

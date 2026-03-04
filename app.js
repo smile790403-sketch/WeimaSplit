@@ -209,12 +209,15 @@ function estimateBaseAmount(){
 }
 
 function updateBaseAmountPreview(){
-  const preview = document.getElementById('base-amount-preview');
-  const est = estimateBaseAmount();
+  const preview = document.getElementById('base-amount-preview'); // 有就用；沒有也無妨
+  const est = estimateBaseAmount(); // 這裡已以 TWD 為基準
+  const twdInput = document.getElementById('exp-amount-twd');
   if (est.baseAmount==null) {
-    preview.textContent = est.msg ? `⚠️ ${est.msg}` : '';
+    if (preview) preview.textContent = est.msg ? `⚠️ ${est.msg}` : '';
+    if (twdInput) twdInput.value = '';
   } else {
-    preview.textContent = `≈ 本幣估算：${fmt.money(est.baseAmount, est.base)}`;
+    if (preview) preview.textContent = `≈ 本幣估算：${fmt.money(est.baseAmount, 'TWD')}`;
+    if (twdInput) twdInput.value = Number(est.baseAmount).toLocaleString('zh-TW', {minimumFractionDigits:2, maximumFractionDigits:2});
   }
 }
 

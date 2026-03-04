@@ -1,5 +1,5 @@
 // ==== API 連線設定 ====
-const API_BASE = 'https://script.google.com/macros/s/AKfycbzRW7y6L1axRjCnehQ_p6raAXFm0_QLtpMXhOf9pty66GbkQ3chq8fTDccALbBwdcJFlQ/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbwQAeQfpN11TICFWUr7-cBcYXP8uNBwowfenucEc7CUXdNguHsITSHt1G1dC6bpnW3FTg/exec';
 const APP_KEY = 'halfweimasplit2026';
 
 function apiGet(params){

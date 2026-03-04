@@ -32,6 +32,7 @@ const Api = {
 
   listExpenses: (tripId) => apiGet({ action:'listexpenses', tripId }),
   addExpense:   (payload) => apiPost({ action:'addexpense', ...payload }),
+  updateExpense:(payload) => apiPost({ action:'updateexpense', ...payload }), // ← 新增
 
   analytics: (tripId) => apiGet({ action:'analytics', tripId }),
   settlements: (tripId) => apiGet({ action:'settlements', tripId }),

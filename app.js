@@ -92,17 +92,19 @@ function renderDynamicSelectors(){
     });
   });
 
-  // 幣別：TWD + 旅程常用幣別 + 換匯表出現過的幣別
+  // 幣別：TWD + 旅程常用幣別（可多個）+ 換匯表的幣別
   const currSel = document.getElementById('exp-currency');
   currSel.innerHTML='';
-  const baseCs = (trip && Array.isArray(trip.baseCurrencies)) ? trip.baseCurrencies : ((trip?.baseCurrency||'').split(',').map(s=>s.trim().toUpperCase()));
+  const baseCs = (trip && Array.isArray(trip.baseCurrencies)) 
+    ? trip.baseCurrencies 
+    : ((trip?.baseCurrency||'').split(',').map(s=>s.trim().toUpperCase()));
   const set = new Set(['TWD', ...baseCs, ...state.fx.map(x=> (x.currency||'').toUpperCase())]);
-  set.forEach(c=>{
-    if (!c) return;
+  Array.from(set).filter(Boolean).forEach(c=>{
     const opt=document.createElement('option'); opt.value=c; opt.textContent=c;
     currSel.appendChild(opt);
   });
 }
+
 
 function renderFxList(){
   const tb = document.querySelector('#fx-table tbody');
@@ -188,36 +190,34 @@ function collectPayerAllocations(){
   return vals;
 }
 
-// 估算 base 金額（用現有 FX）
 function estimateBaseAmount(){
-  const trip = state.trips.find(t=>t.id===state.currentTripId);
-  const base = trip ? trip.baseCurrency : 'TWD';
   const amount = Number(document.getElementById('exp-amount').value||0);
   const currency = document.getElementById('exp-currency').value;
   const date = document.getElementById('exp-date').value;
-  if (!amount || !currency || !date) return { base, baseAmount: null, msg:'' };
+  if (!amount || !currency || !date) return { base:'TWD', baseAmount: null, msg:'' };
 
-  if (currency === base) return { base, baseAmount: amount, msg:'' };
+  if (currency === 'TWD') return { base:'TWD', baseAmount: amount, msg:'' };
   const list = state.fx
-    .filter(f=>f.currency===currency)
+    .filter(f=> (f.currency||'').toUpperCase()===currency)
     .sort((a,b)=> new Date(b.date)-new Date(a.date));
   const target = list.find(f=> new Date(f.date) <= new Date(date));
-  if (!target) return { base, baseAmount: null, msg:`缺${currency}匯率（${date} 當日或之前）` };
+  if (!target) return { base:'TWD', baseAmount: null, msg:`缺 ${currency} 匯率（${date} 當日或之前）` };
   const rate = Number(target.rateBasePerUnit||0);
-  if (!rate) return { base, baseAmount: null, msg:`${currency} 匯率格式錯誤` };
-  return { base, baseAmount: +(amount*rate).toFixed(2), msg:'' };
+  if (!rate) return { base:'TWD', baseAmount: null, msg:`${currency} 匯率格式錯誤` };
+  return { base:'TWD', baseAmount: +(amount*rate).toFixed(2), msg:'' };
 }
 
 function updateBaseAmountPreview(){
-  const preview = document.getElementById('base-amount-preview'); // 有就用；沒有也無妨
-  const est = estimateBaseAmount(); // 這裡已以 TWD 為基準
+  const est = estimateBaseAmount();
   const twdInput = document.getElementById('exp-amount-twd');
+  const helper = document.getElementById('base-amount-preview'); // 有就顯示；沒有也可忽略
   if (est.baseAmount==null) {
-    if (preview) preview.textContent = est.msg ? `⚠️ ${est.msg}` : '';
     if (twdInput) twdInput.value = '';
+    if (helper) helper.textContent = est.msg ? `⚠️ ${est.msg}` : '';
   } else {
-    if (preview) preview.textContent = `≈ 本幣估算：${fmt.money(est.baseAmount, 'TWD')}`;
-    if (twdInput) twdInput.value = Number(est.baseAmount).toLocaleString('zh-TW', {minimumFractionDigits:2, maximumFractionDigits:2});
+    if (twdInput) twdInput.value = Number(est.baseAmount)
+      .toLocaleString('zh-TW',{minimumFractionDigits:2, maximumFractionDigits:2});
+    if (helper) helper.textContent = `≈ TWD 估算：${fmt.money(est.baseAmount,'TWD')}`;
   }
 }
 
@@ -297,30 +297,64 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
   // 新增支出
   document.getElementById('btn-add-expense').addEventListener('click', ()=>{
-    const tripId = state.currentTripId;
-    if (!tripId) return alert('請先選擇旅程');
+  const tripId = state.currentTripId;
+  if (!tripId) return alert('請先選擇旅程');
 
-    const date = document.getElementById('exp-date').value;
-    const category = document.getElementById('exp-category').value;
-    const amount = document.getElementById('exp-amount').value;
-    const currency = document.getElementById('exp-currency').value;
-    const paymentMethod = document.getElementById('exp-paymethod').value;
+  const date = document.getElementById('exp-date').value;
+  const category = document.getElementById('exp-category').value;
+  const amount = document.getElementById('exp-amount').value;
+  const currency = document.getElementById('exp-currency').value;
+  const paymentMethod = document.getElementById('exp-paymethod').value;
 
-    const payers = Array.from(document.getElementById('exp-payers').selectedOptions).map(o=>o.value);
-    const participants = Array.from(document.getElementById('exp-participants').selectedOptions).map(o=>o.value);
+  const payers = Array.from(document.getElementById('exp-payers').selectedOptions).map(o=>o.value);
+  const participants = Array.from(document.getElementById('exp-participants').selectedOptions).map(o=>o.value);
 
-    const splitMethod = document.getElementById('exp-splitmethod').value;
-    const splitValuesStr = document.getElementById('exp-splitvalues').value.trim();
-    const splitValues = splitValuesStr ? splitValuesStr.split(',').map(x=>Number(x.trim())) : [];
+  const splitMethod = document.getElementById('exp-splitmethod').value;
+  const splitValuesStr = document.getElementById('exp-splitvalues').value.trim();
+  const splitValues = splitValuesStr ? splitValuesStr.split(',').map(x=>Number(x.trim())) : [];
 
-    const note = document.getElementById('exp-note').value.trim();
+  const note = document.getElementById('exp-note').value.trim();
 
-    if (!date || !amount || !currency) return alert('請填日期、金額、幣別');
-    if (participants.length===0) return alert('請選擇費用參與者');
-    if (payers.length===0) return alert('請選擇付款者');
+  if (!date || !amount || !currency) return alert('請填日期、金額、幣別');
+  if (participants.length===0) return alert('請選擇費用參與者');
+  if (payers.length===0) return alert('請選擇付款者');
 
-    const payerAllocations = collectPayerAllocations();
+  const payerAllocations = collectPayerAllocations();
 
+  const payload = {
+    tripId, date, category, amount, currency, paymentMethod, note,
+    payers: JSON.stringify(payers),
+    payerAllocations: JSON.stringify(payerAllocations), // [] 表示均分
+    participants: JSON.stringify(participants),
+    splitMethod,
+    splitValues: JSON.stringify(splitValues)
+  };
+
+  const action = editingExpenseId ? Api.updateExpense : Api.addExpense;
+  if (editingExpenseId) payload.id = editingExpenseId;
+
+  action(payload).then(()=>{
+    // reset
+    ['exp-date','exp-amount','exp-splitvalues','exp-note','exp-amount-twd'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    document.getElementById('exp-category').selectedIndex=0;
+    document.getElementById('exp-paymethod').selectedIndex=0;
+    document.getElementById('exp-payers').selectedIndex=-1;
+    document.getElementById('exp-participants').selectedIndex=-1;
+    setPayerAllocMode('equal');
+    refreshPayerAllocCard();
+    document.getElementById('btn-add-expense').textContent = '新增支出';
+    editingExpenseId = null;
+
+    // reload
+    return Api.listExpenses(tripId);
+  }).then(d=>{
+    state.expenses = d;
+    renderExpenseList();
+    renderAnalytics();
+    renderSettlementList();
+  }).catch(err=>alert(err.message));
+});
+  
     Api.addExpense({
       tripId, date, category, amount, currency, paymentMethod, note,
       payers: JSON.stringify(payers),
@@ -358,9 +392,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
 function renderExpenseList(){
   const tb = document.querySelector('#exp-table tbody'); if(!tb) return;
-  const trip = state.trips.find(t=>t.id===state.currentTripId);
-  const base = trip ? trip.baseCurrency : 'TWD';
-
   const s = document.getElementById('flt-start').value;
   const e = document.getElementById('flt-end').value;
   const cat = document.getElementById('flt-cat').value;
@@ -374,18 +405,66 @@ function renderExpenseList(){
 
   tb.innerHTML='';
   rows.forEach(x=>{
+    const d = normalizeDateValue(x.date);
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${x.date}</td>
+      <td>${d}</td>
       <td>${x.category}</td>
       <td>${Number(x.amount).toLocaleString()}</td>
       <td>${x.currency}</td>
-      <td>${fmt.money(x.baseAmount, base)}</td>
+      <td>${fmt.money(x.baseAmount, 'TWD')}</td>
       <td>${Array.isArray(x.payers)? x.payers.join(', '):x.payers||''}</td>
       <td>${Array.isArray(x.participants)? x.participants.join(', '):x.participants||''}</td>
       <td>${x.splitMethod}</td>
       <td>${x.note||''}</td>
+      <td><button class="ghost small btn-edit-exp" data-id="${x.id}">📝 編輯</button></td>
     `;
     tb.appendChild(tr);
   });
 }
+let editingExpenseId = null;
+
+document.getElementById('exp-table').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.btn-edit-exp');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  const x = state.expenses.find(it=>it.id===id);
+  if (!x) return;
+
+  // 基本欄位
+  document.getElementById('exp-date').value = normalizeDateValue(x.date);
+  document.getElementById('exp-category').value = x.category;
+  document.getElementById('exp-amount').value = x.amount;
+  document.getElementById('exp-currency').value = x.currency;
+  document.getElementById('exp-paymethod').value = x.paymentMethod || '';
+  document.getElementById('exp-note').value = x.note || '';
+
+  // 付款者 / 參與者
+  const setSelect = (sel, values=[])=>{
+    Array.from(sel.options).forEach(o => o.selected = values.includes(o.value));
+  };
+  setSelect(document.getElementById('exp-payers'), x.payers||[]);
+  setSelect(document.getElementById('exp-participants'), x.participants||[]);
+
+  // 分攤方式
+  document.getElementById('exp-splitmethod').value = x.splitMethod || 'equal';
+  document.getElementById('exp-splitvalues').value = Array.isArray(x.splitValues) ? x.splitValues.join(',') : '';
+
+  // 付款者分配（若有）
+  if (x.payers && x.payers.length) {
+    setPayerAllocMode((x.payerAllocations && x.payerAllocations.length) ? 'custom' : 'equal');
+    refreshPayerAllocCard();
+    if (x.payerAllocations && x.payerAllocations.length) {
+      // 將數值填入動態表格
+      x.payers.forEach((name, idx)=>{
+        const el = document.querySelector(`#payer-alloc-table input[data-payer="${name}"]`);
+        if (el) el.value = x.payerAllocations[idx] || 0;
+      });
+    }
+  }
+
+  // 切換按鈕狀態
+  editingExpenseId = id;
+  document.getElementById('btn-add-expense').textContent = '更新支出';
+  updateBaseAmountPreview();
+});

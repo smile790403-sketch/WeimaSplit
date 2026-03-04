@@ -1,3 +1,14 @@
+function normalizeDateValue(x){
+  if (!x) return '';
+  const d = (x instanceof Date) ? x : new Date(x);
+  if (isNaN(d)) return '';
+  return d.toISOString().slice(0,10); // YYYY-MM-DD
+}
+function pick(obj, ...keys){
+  for (const k of keys) if (obj && obj[k]!=null && obj[k]!=='') return obj[k];
+  return '';
+}
+
 const state = {
   trips: [],
   currentTripId: null,
@@ -16,12 +27,14 @@ function loadTrips(){
     state.trips = trips;
     const sel = document.getElementById('currentTrip');
     sel.innerHTML = '';
-    trips.slice().reverse().forEach(t=>{
-      const opt = document.createElement('option');
-      opt.value = t.id;
-      opt.textContent = `${t.name} (${t.startDate}~${t.endDate})`;
-      sel.appendChild(opt);
-    });
+   trips.slice().reverse().forEach(t=>{
+  const opt = document.createElement('option');
+  const sd = normalizeDateValue(pick(t,'startDate','startdate','start date'));
+  const ed = normalizeDateValue(pick(t,'endDate','enddate','end date'));
+  opt.value = t.id;
+  opt.textContent = `${t.name} (${sd||'—'}~${ed||'—'})`;
+  sel.appendChild(opt);
+});
     if (trips.length) {
       state.currentTripId = trips[trips.length - 1].id;
       sel.value = state.currentTripId;
@@ -35,13 +48,16 @@ function renderTripTable(){
   const tb = document.querySelector('#trip-table tbody');
   tb.innerHTML = '';
   state.trips.slice().reverse().forEach(t=>{
+    const sd = normalizeDateValue(pick(t,'startDate','startdate','start date'));
+    const ed = normalizeDateValue(pick(t,'endDate','enddate','end date'));
+    const members = Array.isArray(t.participants)? t.participants.join(', ') : (t.participants||'');
+    const baseShow = (t.baseCurrency||'').toUpperCase();
     const tr = document.createElement('tr');
-    const members = Array.isArray(t.participants)? t.participants.join(', ') : t.participants;
     tr.innerHTML = `
-      <td>${t.name}</td>
-      <td>${t.startDate} ~ ${t.endDate}</td>
-      <td><span class="badge">${t.baseCurrency}</span></td>
-      <td>${members||''}</td>
+      <td>${t.name||''}</td>
+      <td>${sd||''} ~ ${ed||''}</td>
+      <td><span class="badge">${baseShow||'TWD'}</span></td>
+      <td>${members}</td>
     `;
     tb.appendChild(tr);
   });
@@ -76,12 +92,13 @@ function renderDynamicSelectors(){
     });
   });
 
-  // 幣別：FX 幣別 + baseCurrency
+  // 幣別：TWD + 旅程常用幣別 + 換匯表出現過的幣別
   const currSel = document.getElementById('exp-currency');
   currSel.innerHTML='';
-  const base = (trip && trip.baseCurrency) ? trip.baseCurrency : 'TWD';
-  const cset = new Set([base, ...state.fx.map(x=>x.currency)]);
-  cset.forEach(c=>{
+  const baseCs = (trip && Array.isArray(trip.baseCurrencies)) ? trip.baseCurrencies : ((trip?.baseCurrency||'').split(',').map(s=>s.trim().toUpperCase()));
+  const set = new Set(['TWD', ...baseCs, ...state.fx.map(x=> (x.currency||'').toUpperCase())]);
+  set.forEach(c=>{
+    if (!c) return;
     const opt=document.createElement('option'); opt.value=c; opt.textContent=c;
     currSel.appendChild(opt);
   });

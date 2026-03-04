@@ -151,9 +151,10 @@
             <label>幣別</label>
             <select id="exp-currency"></select>
           </div>
-          <div>
+         <!-- 在金額/幣別旁邊新增一格 -->
+<div>
   <label>台幣金額（自動換算）</label>
-  <input id="exp-amount-twd" readonly placeholder="將依換匯自動計算" />
+  <input id="exp-amount-twd" readonly placeholder="依換匯自動計算" />
 </div>
           <div>
             <label>付款方式</label>
@@ -247,12 +248,15 @@
           </div>
         </div>
 
-        <table class="table" id="exp-table">
-          <thead>
-            <tr><th>日期</th><th>類別</th><th>金額</th><th>幣別</th><th>Base金額</th><th>付款者</th><th>參與者</th><th>分攤方式</th><th>備註</th></tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+       <table class="table" id="exp-table">
+  <thead>
+    <tr>
+      <th>日期</th><th>類別</th><th>金額</th><th>幣別</th><th>TWD 金額</th>
+      <th>付款者</th><th>參與者</th><th>分攤方式</th><th>備註</th><th>操作</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
       </div>
     </section>
 
